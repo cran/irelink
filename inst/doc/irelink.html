@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Getting Started</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting Started</h1>
+
+
+
+<div id="what-is-record-linkage" class="section level2">
+<h2>What is record linkage?</h2>
+<p>Record linkage, also called entity resolution or deduplication,
+identifies records in one or more datasets that refer to the same
+real-world entity. When datasets do not share a unique identifier, you
+must rely on imperfect fields such as names, dates of birth, and
+addresses. Probabilistic record linkage estimates the chance that two
+records are a match based on how similar they are across several
+fields.</p>
+<p><code>irelink</code> implements the Fellegi-Sunter model of
+probabilistic record linkage. It estimates parameters with unsupervised
+expectation maximization, so you can get started without labeled
+training data.</p>
+</div>
+<div id="a-typical-workflow" class="section level2">
+<h2>A typical workflow</h2>
+<p>Every linkage task follows the same general pattern:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Define a specification.</strong> Choose which columns to
+compare and how.</li>
+<li><strong>Build a model.</strong> Load data into a SQL backend and
+attach the specification.</li>
+<li><strong>Train parameters.</strong> Estimate u-probabilities, then
+run EM to learn m-probabilities.</li>
+<li><strong>Predict.</strong> Score candidate pairs and keep the likely
+matches.</li>
+<li><strong>Cluster.</strong> Resolve pairwise links into groups that
+represent the same entity.</li>
+</ol>
+<p>The example below walks through each step using a small built-in
+dataset.</p>
+</div>
+<div id="step-1-define-a-specification" class="section level2">
+<h2>Step 1: Define a specification</h2>
+<p>A specification defines the comparisons and blocking rules that drive
+the model. Comparisons tell <code>irelink</code> how to score similarity
+on each field, and blocking rules limit which record pairs are compared
+so linkage stays tractable on large datasets.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(irelink)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">il_spec</span>() <span class="sc">|&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">il_compare</span>(first_name, <span class="fu">cl_jaro_winkler</span>(<span class="fl">0.9</span>, <span class="fl">0.7</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">il_compare</span>(surname, <span class="fu">cl_jaro_winkler</span>(<span class="fl">0.9</span>, <span class="fl">0.7</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  <span class="fu">il_compare</span>(dob, <span class="fu">cl_exact</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>  <span class="fu">il_block_on</span>(surname) <span class="sc">|&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>  <span class="fu">il_block_on</span>(first_name)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>spec</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt; Linkage Specification</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt;   Comparisons (3):</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt;     first_name : jaro_winkler</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt;     surname : jaro_winkler</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="co">#&gt;     dob : exact</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co">#&gt;   Blocking rules (2, OR-ed):</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="co">#&gt;     1. surname</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt;     2. first_name</span></span></code></pre></div>
+<p>Each call to <code>il_compare()</code> adds one comparison dimension.
+Here, <code>cl_jaro_winkler(0.9, 0.7)</code> creates three levels:
+similarity of at least 0.9 is level 2, similarity of at least 0.7 is
+level 1, and anything lower is level 0. <code>cl_exact()</code> is a
+simple binary match.</p>
+<p>Blocking rules defined with <code>il_block_on()</code> restrict
+candidate pairs to records that share the same value in the blocking
+column. Multiple blocking rules use OR logic, so a pair is compared if
+it satisfies any one of them.</p>
+</div>
+<div id="step-2-build-a-model" class="section level2">
+<h2>Step 2: Build a model</h2>
+<p><code>il_model()</code> uploads the data to a SQL backend and
+attaches the specification. Any DBI-compatible connection works. Here we
+use an in-memory DuckDB database:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>df <span class="ot">&lt;-</span> fake_20</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>con <span class="ot">&lt;-</span> DBI<span class="sc">::</span><span class="fu">dbConnect</span>(duckdb<span class="sc">::</span><span class="fu">duckdb</span>())</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_model</span>(df, <span class="at">spec =</span> spec, <span class="at">con =</span> con)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>model</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; irelink Model</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;   Status: Untrained</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt;   Link type: dedupe</span></span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt;   Records: 20</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;   Comparisons: 3</span></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;   Blocking rules: 2</span></span></code></pre></div>
+</div>
+<div id="step-3-train-parameters" class="section level2">
+<h2>Step 3: Train parameters</h2>
+<p>Training has two main steps. First, estimate u-probabilities, which
+are the chances that two random non-matching records agree at each
+comparison level:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_estimate_u</span>(model)</span></code></pre></div>
+<p>Next, run expectation maximization to learn m-probabilities, which
+are the chances that true matches agree at each level. You provide a
+blocking rule to generate the training pairs:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_estimate_em</span>(model, <span class="fu">block_on</span>(surname))</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt; EM trained: first_name and dob | skipped (blocked on): surname</span></span></code></pre></div>
+<p>You can inspect the learned parameters at any time:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">il_weights</span>(model)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 8 × 5</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co">#&gt;   comparison gamma_level m_prob u_prob weight</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;            &lt;int&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="co">#&gt; 1 first_name           0 0.0114 0.832  -6.18 </span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co">#&gt; 2 first_name           1 0.196  0.0632  1.63 </span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="co">#&gt; 3 first_name           2 0.792  0.105   2.91 </span></span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="co">#&gt; 4 surname              0 0.05   0.821  -4.04 </span></span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co">#&gt; 5 surname              1 0.05   0.0368  0.441</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co">#&gt; 6 surname              2 0.9    0.142   2.66 </span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co">#&gt; 7 dob                  0 0.280  0.921  -1.72 </span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co">#&gt; 8 dob                  1 0.720  0.0789  3.19</span></span></code></pre></div>
+</div>
+<div id="step-4-predict" class="section level2">
+<h2>Step 4: Predict</h2>
+<p><code>predict()</code> scores candidate pairs and returns those above
+a match-probability threshold:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model, <span class="at">threshold =</span> <span class="fl">0.5</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">head</span>(pairs)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 8</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a><span class="co">#&gt;   unique_id_l unique_id_r gamma_first_name gamma_surname gamma_dob match_weight</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a><span class="co">#&gt;         &lt;int&gt;       &lt;int&gt;            &lt;int&gt;         &lt;int&gt;     &lt;int&gt;        &lt;dbl&gt;</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a><span class="co">#&gt; 1          19          20                2             2         0         3.86</span></span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="co">#&gt; 2           7          17                2             2         1         8.76</span></span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="co">#&gt; 3           3          14                2             2         0         3.86</span></span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a><span class="co">#&gt; 4           4          14                2             2         0         3.86</span></span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a><span class="co">#&gt; 5           7           8                1             2         1         7.49</span></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="co">#&gt; 6           2          12                2             1         0         1.64</span></span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: total_match_weight &lt;dbl&gt;, match_probability &lt;dbl&gt;</span></span></code></pre></div>
+<p>Each row is a candidate pair. The output includes the left and right
+record identifiers, the per-comparison gamma values, the evidence-only
+<code>match_weight</code>, the prior-inclusive
+<code>total_match_weight</code>, and the posterior
+<code>match_probability</code>.</p>
+</div>
+<div id="step-5-cluster" class="section level2">
+<h2>Step 5: Cluster</h2>
+<p><code>il_cluster()</code> resolves pairwise predictions into entity
+clusters with connected-components analysis:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>clusters <span class="ot">&lt;-</span> <span class="fu">il_cluster</span>(pairs)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">head</span>(clusters)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 2</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt;   unique_id cluster_id</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;     &lt;chr&gt;     </span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co">#&gt; 1 19        cluster_10</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="co">#&gt; 2 8         cluster_17</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="co">#&gt; 3 9         cluster_10</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="co">#&gt; 4 4         cluster_13</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="co">#&gt; 5 13        cluster_13</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="co">#&gt; 6 7         cluster_17</span></span></code></pre></div>
+<p>Each record is assigned a <code>cluster_id</code>. Records in the
+same cluster are treated as the same entity.</p>
+</div>
+<div id="comparison-levels" class="section level2">
+<h2>Comparison levels</h2>
+<p><code>irelink</code> includes a large set of comparison levels for
+common field types:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Level</th>
+<th>Use case</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>cl_exact()</code></td>
+<td>Binary exact match</td>
+</tr>
+<tr class="even">
+<td><code>cl_jaro_winkler()</code></td>
+<td>Names, short strings</td>
+</tr>
+<tr class="odd">
+<td><code>cl_levenshtein()</code></td>
+<td>General fuzzy strings</td>
+</tr>
+<tr class="even">
+<td><code>cl_damerau_levenshtein()</code></td>
+<td>Strings with transpositions</td>
+</tr>
+<tr class="odd">
+<td><code>cl_jaro()</code></td>
+<td>Lightweight string similarity</td>
+</tr>
+<tr class="even">
+<td><code>cl_jaccard()</code></td>
+<td>Token-set overlap</td>
+</tr>
+<tr class="odd">
+<td><code>cl_cosine()</code></td>
+<td>Embedding similarity</td>
+</tr>
+<tr class="even">
+<td><code>cl_numeric_diff()</code></td>
+<td>Numeric fields (e.g., age)</td>
+</tr>
+<tr class="odd">
+<td><code>cl_pct_diff()</code></td>
+<td>Percentage difference</td>
+</tr>
+<tr class="even">
+<td><code>cl_date_diff()</code></td>
+<td>Date fields</td>
+</tr>
+<tr class="odd">
+<td><code>cl_time_diff()</code></td>
+<td>Time fields</td>
+</tr>
+<tr class="even">
+<td><code>cl_geo_distance()</code></td>
+<td>Geographic coordinates</td>
+</tr>
+<tr class="odd">
+<td><code>cl_array_intersect()</code></td>
+<td>Array or set overlap</td>
+</tr>
+</tbody>
+</table>
+<p>For common field types, domain-specific helpers combine multiple
+levels into a single call:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Helper</th>
+<th>Fields</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>cl_name()</code></td>
+<td>Generic name field</td>
+</tr>
+<tr class="even">
+<td><code>cl_first_last_name()</code></td>
+<td>First name and last name as separate fields</td>
+</tr>
+<tr class="odd">
+<td><code>cl_forename_surname()</code></td>
+<td>Forename and surname with transposition</td>
+</tr>
+<tr class="even">
+<td><code>cl_dob()</code></td>
+<td>Date of birth</td>
+</tr>
+<tr class="odd">
+<td><code>cl_email()</code></td>
+<td>Email addresses</td>
+</tr>
+<tr class="even">
+<td><code>cl_postcode()</code></td>
+<td>UK postal codes</td>
+</tr>
+<tr class="odd">
+<td><code>cl_zip_code()</code></td>
+<td>US ZIP codes</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="evaluation" class="section level2">
+<h2>Evaluation</h2>
+<p>If you have labeled data, meaning pairs that are known matches or
+non-matches, <code>irelink</code> provides tools to assess model
+quality:</p>
+<ul>
+<li><code>il_accuracy()</code>: overall accuracy at a threshold</li>
+<li><code>il_precision_recall()</code>: precision and recall across
+thresholds</li>
+<li><code>il_roc()</code>: ROC curve data</li>
+<li><code>il_errors()</code>: inspect false positives and false
+negatives</li>
+</ul>
+</div>
+<div id="cleaning-up" class="section level2">
+<h2>Cleaning up</h2>
+<p>When you are done, release the database resources owned by the model.
+In an interactive session with abandoned models, use
+<code>il_cleanup_all(con)</code> before disconnecting to drop every
+<code>irelink</code> table on the connection.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">il_cleanup</span>(model)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>DBI<span class="sc">::</span><span class="fu">dbDisconnect</span>(con, <span class="at">shutdown =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

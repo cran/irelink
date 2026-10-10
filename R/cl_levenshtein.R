@@ -1,0 +1,52 @@
+#' Levenshtein Edit-Distance Comparison
+#'
+#' Creates comparison levels based on the Levenshtein edit distance
+#' (minimum number of single-character insertions, deletions, or
+#' substitutions). Thresholds are integer counts, ordered from strictest
+#' (smallest distance) to most lenient.
+#'
+#' @param ... Integer distance thresholds, ordered from strictest to most
+#'   lenient (e.g., `1, 2`).
+#' @param term_frequency Logical. If `TRUE`, adjust match weights by
+#'   value frequency at the highest comparison level. Defaults to `FALSE`.
+#'
+#' @return A comparison-level object for use in [il_compare()].
+#' @export
+#'
+#' @examples
+#' il_spec() |>
+#'   il_compare(name, cl_levenshtein(1, 2))
+cl_levenshtein <- function(..., term_frequency = FALSE) {
+  thresholds <- check_distance_thresholds(c(...), 'cl_levenshtein')
+  new_comparison_level(
+    'levenshtein',
+    thresholds = thresholds,
+    term_frequency = term_frequency
+  )
+}
+
+#' Damerau-Levenshtein Edit-Distance Comparison
+#'
+#' Creates comparison levels based on the Damerau-Levenshtein distance,
+#' which extends [cl_levenshtein()] by also counting transpositions of
+#' two adjacent characters as a single edit.
+#'
+#' @param ... Integer distance thresholds, ordered from strictest to most
+#'   lenient.
+#' @param term_frequency Logical. If `TRUE`, adjust match weights by
+#'   value frequency at the highest comparison level. Defaults to `FALSE`.
+#'
+#' @return A comparison-level object for use in [il_compare()].
+#' @export
+#'
+#' @examples
+#' il_spec() |>
+#'   il_compare(name, cl_damerau_levenshtein(1))
+cl_damerau_levenshtein <- function(..., term_frequency = FALSE) {
+  thresholds <- check_distance_thresholds(c(...), 'cl_damerau_levenshtein')
+  new_comparison_level(
+    'damerau_levenshtein',
+    thresholds = thresholds,
+    term_frequency = term_frequency
+  )
+}

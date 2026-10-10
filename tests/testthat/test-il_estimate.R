@@ -1,0 +1,485 @@
+# Translated from splink's u, EM, prior, and m training tests
+
+# Helper to create a trained-ready model
+make_test_model <- function(con) {
+  df <- data.frame(
+    unique_id = 1:6,
+    first_name = c('Amanda', 'Amanda', 'Robin', 'Robyn', 'David', 'Eve'),
+    surname = c('Smith', 'Jones', 'Williams', 'Green', 'Pope', 'Anderson')
+  )
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_levenshtein(2)) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(first_name)
+
+  il_model(df, spec = spec, con = con)
+}
+
+# il_estimate_u(): from test_u_train.py
+
+test_that('il_estimate_u() returns an il_model with u parameters set', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  model <- make_test_model(con) |>
+    il_estimate_u(max_pairs = 1e6)
+
+  expect_s3_class(model, 'il_model')
+  params <- il_parameters(model)
+  # u values should be populated (not all NA)
+  expect_false(all(is.na(params$u)))
+})
+
+test_that('il_estimate_u() produces reasonable u values', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # 6 records, 15 pairs, one Amanda-Amanda exact match -> u ~= 1/15
+  model <- make_test_model(con) |>
+    il_estimate_u(max_pairs = 1e6)
+
+  params <- il_parameters(model)
+  # All u values should be in [0, 1]
+  expect_true(all(params$u >= 0 & params$u <= 1, na.rm = TRUE))
+})
+
+test_that('il_estimate_u() can stop chunked sampling after every level is observed', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:100, key = rep(c('a', 'b'), 50))
+  spec <- il_spec() |>
+    il_compare(key, cl_exact())
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(
+      max_pairs = 1e4,
+      chunk_size = 500,
+      min_count_per_level = 1
+    )
+
+  expect_true(model$params$u_estimation$stopped_early)
+  expect_lt(model$params$u_estimation$n_pairs_sampled, choose(100, 2))
+})
+
+test_that('il_estimate_u() samples pairs at random from ordered data', {
+  withr::local_seed(1)
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:2000, key = rep(c('a', 'b', 'c', 'd'), each = 500))
+  spec <- il_spec() |>
+    il_compare(key, cl_exact())
+
+  model <- il_model(df, spec = spec, con = con)
+  tables_before <- DBI::dbListTables(con)
+  model <- il_estimate_u(model, max_pairs = 2e4)
+  params <- il_parameters(model)
+  u_match <- params$u[params$gamma_level == max(params$gamma_level)]
+
+  expect_equal(u_match, 4 * choose(500, 2) / choose(2000, 2), tolerance = 0.1)
+  expect_equal(model$params$u_estimation$n_pairs_sampled, 2e4, tolerance = 0.2)
+  expect_setequal(DBI::dbListTables(con), tables_before)
+})
+
+test_that('il_estimate_u() sampling is reproducible with set.seed()', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:500, key = sample(letters, 500, replace = TRUE))
+  spec <- il_spec() |>
+    il_compare(key, cl_exact())
+  model <- il_model(df, spec = spec, con = con)
+
+  fit <- function(seed) {
+    withr::with_seed(seed, il_estimate_u(model, max_pairs = 5000))$params
+  }
+
+  expect_identical(fit(1), fit(1))
+})
+
+test_that('chunked il_estimate_u() matches unchunked output for one full chunk', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  base <- make_test_model(con)
+  unchunked <- il_estimate_u(base, max_pairs = 15)
+  chunked <- il_estimate_u(base, max_pairs = 15, chunk_size = 15)
+
+  expect_equal(
+    dplyr::arrange(il_parameters(chunked), comparison, gamma_level)$u,
+    dplyr::arrange(il_parameters(unchunked), comparison, gamma_level)$u
+  )
+  expect_false(chunked$params$u_estimation$stopped_early)
+  expect_equal(chunked$params$u_estimation$n_chunks, 1)
+})
+
+test_that('chunked il_estimate_u() supports link mode with two tables', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df_l <- data.frame(unique_id = 1:2, key = c('a', 'b'))
+  df_r <- data.frame(unique_id = 10:12, key = c('a', 'b', 'c'))
+  spec <- il_spec() |>
+    il_compare(key, cl_exact())
+
+  model <- il_model(df_l, df_r, spec = spec, con = con, link_type = 'link') |>
+    il_estimate_u(max_pairs = 6, chunk_size = 2)
+
+  expect_equal(model$params$u_estimation$n_pairs_sampled, 6)
+  expect_equal(sum(il_parameters(model)$u), 1)
+})
+
+test_that('il_estimate_u() keeps unobserved gamma levels with a u floor', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:3, name = c('abc', 'xyz', 'uvw'))
+  spec <- il_spec() |>
+    il_compare(name, cl_levenshtein(0, 1))
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(max_pairs = 3, chunk_size = 2)
+
+  params <- il_parameters(model)
+  expect_equal(sort(params$gamma_level), 0:2)
+  expect_equal(sum(params$u), 1)
+  expect_equal(
+    params$u[params$gamma_level == 1],
+    1e-6 / (1 + 2e-6),
+    tolerance = 1e-12
+  )
+  expect_equal(
+    params$u[params$gamma_level == 2],
+    1e-6 / (1 + 2e-6),
+    tolerance = 1e-12
+  )
+})
+
+# il_estimate_em(): from test_expectation_maximisation.py
+
+test_that('il_estimate_em() returns an il_model with updated parameters', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  model <- make_test_model(con) |>
+    il_estimate_u(max_pairs = 1e6) |>
+    il_estimate_em(block_on(first_name))
+
+  expect_s3_class(model, 'il_model')
+})
+
+test_that('il_estimate_em() errors clearly on empty blocking results', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # No two records share a surname, so blocking on it yields no pairs
+  model <- make_test_model(con) |>
+    il_estimate_u(max_pairs = 1e6)
+
+  expect_error(
+    il_estimate_em(model, block_on(surname))
+  )
+})
+
+test_that('il_estimate_em() max_pairs trains on a record sample', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_compare(city, cl_exact())
+  model <- il_model(fake_1000, spec = spec, con = con) |>
+    il_estimate_u()
+  tables_before <- DBI::dbListTables(con)
+
+  sampled <- em_pair_model(model, block_on(city), 2000, 1)
+  n_sampled <- count_unique_blocked_pairs(
+    con,
+    sampled$model$data$tbl_l,
+    NULL,
+    list(block_on(city)),
+    'dedupe',
+    detect_dialect(con)
+  )
+  drop_sampled_tables(con, sampled$tables)
+  expect_equal(n_sampled, 2000, tolerance = 0.5)
+
+  trained <- suppressMessages(il_estimate_em(
+    model,
+    block_on(city),
+    max_pairs = 2000
+  ))
+  expect_s3_class(trained, 'il_model')
+  expect_identical(trained$data$tbl_l, model$data$tbl_l)
+  expect_setequal(DBI::dbListTables(con), tables_before)
+})
+
+test_that('il_estimate_em() validates max_pairs', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  model <- make_test_model(con)
+
+  expect_snapshot(
+    il_estimate_em(model, block_on(first_name), max_pairs = -1),
+    error = TRUE
+  )
+})
+
+test_that('multiple il_estimate_em() calls refine, not reset, parameters', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- fake_1000
+  spec <- il_spec() |>
+    il_compare(first_name, cl_jaro_winkler(0.9, 0.7)) |>
+    il_compare(surname, cl_jaro_winkler(0.9, 0.7)) |>
+    il_compare(dob, cl_exact()) |>
+    il_block_on(first_name) |>
+    il_block_on(surname)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(max_pairs = 1e6) |>
+    il_estimate_em(block_on(first_name, surname))
+
+  params_after_first <- il_parameters(model)
+
+  model <- model |>
+    il_estimate_em(block_on(dob))
+
+  params_after_second <- il_parameters(model)
+
+  # Parameters may change but should not reset to NA
+  expect_false(all(is.na(params_after_second$m)))
+})
+
+# il_estimate_prior(): from test_estimate_prob_two_rr_match.py
+
+test_that('il_estimate_prior() returns a valid probability', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # From: test_prob_rr_match_dedupe — 6 records, 4 expected matches
+  df <- data.frame(
+    unique_id = 1:6,
+    first_name = c('John', 'John', 'Mary', 'Mary', 'Mary', 'Jane'),
+    surname = c('Smith', 'Smith', 'Jones', 'Jones', 'Jones', 'Taylor')
+  )
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(first_name) |>
+    il_block_on(surname)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_prior(block_on(first_name), block_on(surname), recall = 1.0)
+
+  expect_s3_class(model, 'il_model')
+  # Both rules yield the same 4 of 6 * 5 / 2 = 15 pairs; don't double count
+  expect_equal(model$params$prior, 4 / 15)
+})
+
+test_that('il_estimate_prior() validates recall', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:2, name = c('a', 'a'))
+  spec <- il_spec() |>
+    il_compare(name, cl_exact()) |>
+    il_block_on(name)
+  model <- il_model(df, spec = spec, con = con)
+
+  expect_error(il_estimate_prior(model, block_on(name), recall = 0))
+  expect_error(il_estimate_prior(model, block_on(name), recall = 1.1))
+  expect_error(il_estimate_prior(model, block_on(name), recall = NA_real_))
+  expect_error(il_estimate_prior(model, block_on(name), recall = Inf))
+})
+
+test_that('il_estimate_prior() counts unique blocked pairs for link mode', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df_l <- data.frame(unique_id = 1:2, name = c('a', 'b'))
+  df_r <- data.frame(unique_id = 1:2, name = c('a', 'a'))
+  spec <- il_spec() |>
+    il_compare(name, cl_exact()) |>
+    il_block_on(name)
+
+  model <- il_model(df_l, df_r, spec = spec, con = con, link_type = 'link') |>
+    il_estimate_prior(block_on(name), recall = 1.0)
+
+  expect_equal(model$params$prior, 2 / 4)
+})
+
+test_that('il_estimate_prior() uses link_and_dedupe denominator', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df_l <- data.frame(unique_id = 1:2, name = c('a', 'a'))
+  df_r <- data.frame(unique_id = 1:2, name = c('a', 'c'))
+  spec <- il_spec() |>
+    il_compare(name, cl_exact()) |>
+    il_block_on(name)
+
+  model <- il_model(
+    df_l,
+    df_r,
+    spec = spec,
+    con = con,
+    link_type = 'link_and_dedupe'
+  ) |>
+    il_estimate_prior(block_on(name), recall = 1.0)
+
+  # 3 matches over 2 * 2 cross + 1 within-left + 1 within-right = 6 pairs
+  expect_equal(model$params$prior, 3 / 6)
+})
+
+test_that('il_estimate_prior() estimates from a record sample', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_block_on(city)
+  model <- il_model(fake_1000, spec = spec, con = con)
+
+  exact <- il_estimate_prior(model, block_on(city), recall = 1)
+  est <- il_estimate_prior(
+    model,
+    block_on(city),
+    recall = 1,
+    record_sample_proportion = 0.5
+  )
+
+  expect_equal(est$params$prior, exact$params$prior, tolerance = 0.25)
+})
+
+# il_estimate_m_from_labels(): from test_m_train.py
+
+test_that('il_estimate_m_from_labels() computes m from pairwise labels', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # From: test_m_train — 5 records with clusters
+  df <- data.frame(
+    unique_id = 1:5,
+    first_name = c('Robin', 'Robyn', 'Robin', 'James', 'David'),
+    surname = rep('X', 5),
+    cluster = c(1, 1, 1, 2, 2)
+  )
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_levenshtein(2)) |>
+    il_block_on(first_name)
+
+  # Create pairwise labels from cluster assignments
+  labels <- data.frame(
+    unique_id_l = c(1L, 1L, 2L, 4L),
+    unique_id_r = c(2L, 3L, 3L, 5L),
+    is_match = c(TRUE, TRUE, TRUE, TRUE)
+  )
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_m_from_labels(labels)
+
+  params <- il_parameters(model)
+  expect_false(all(is.na(params$m)))
+  # All m values should be in [0, 1]
+  expect_true(all(params$m >= 0 & params$m <= 1, na.rm = TRUE))
+})
+
+test_that('il_estimate_m_from_labels() validates label table shape', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(
+    unique_id = 1:3,
+    first_name = c('Robin', 'Robyn', 'James')
+  )
+  spec <- il_spec() |>
+    il_compare(first_name, cl_levenshtein(2))
+  model <- il_model(df, spec = spec, con = con)
+
+  expect_error(
+    il_estimate_m_from_labels(model, data.frame(unique_id_l = 1L)),
+    'unique_id_r'
+  )
+  expect_error(
+    il_estimate_m_from_labels(
+      model,
+      data.frame(
+        unique_id_l = 1L,
+        unique_id_r = 2L,
+        is_match = NA
+      )
+    ),
+    'is_match'
+  )
+  expect_error(
+    il_estimate_m_from_labels(
+      model,
+      data.frame(
+        unique_id_l = 1L,
+        unique_id_r = 2L,
+        is_match = 2
+      )
+    ),
+    '0/1'
+  )
+})
+
+# il_estimate_m_from_column(): from test_m_train.py
+
+test_that('il_estimate_m_from_column() computes m from a cluster column', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # From: test_m_train — estimate_m_from_label_column("cluster")
+  df <- data.frame(
+    unique_id = 1:5,
+    first_name = c('Robin', 'Robyn', 'Robin', 'James', 'David'),
+    surname = rep('X', 5),
+    cluster = c(1, 1, 1, 2, 2)
+  )
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_levenshtein(2)) |>
+    il_block_on(first_name)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_m_from_column(cluster)
+
+  params <- il_parameters(model)
+  expect_false(all(is.na(params$m)))
+  expect_true(all(params$m >= 0 & params$m <= 1, na.rm = TRUE))
+})

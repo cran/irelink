@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Translating from Splink</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Translating from Splink</h1>
+
+
+
+<p><code>irelink</code> translates the Python <a href="https://github.com/moj-analytical-services/splink">splink</a>
+library into idiomatic R. This vignette maps common Splink 5 patterns to
+<code>irelink</code> so you can get started quickly.</p>
+<div id="design-differences" class="section level2">
+<h2>Design differences</h2>
+<p>Splink uses an object-oriented design centered on a
+<code>Linker</code> class. <code>irelink</code> uses a functional
+pipeline that fits naturally in R. The <code>Linker</code> object’s
+namespaced methods such as <code>linker.training.*</code> and
+<code>linker.inference.*</code> become standalone functions that accept
+and return an <code>il_model</code> object.</p>
+<p>Splink bundles comparison levels into high-level comparison classes
+such as <code>JaroWinklerAtThresholds</code>. In <code>irelink</code>,
+the <code>cl_*()</code> functions fill the same role and can be passed
+directly to <code>il_compare()</code>.</p>
+</div>
+<div id="core-workflow" class="section level2">
+<h2>Core workflow</h2>
+<table>
+<colgroup>
+<col width="17%" />
+<col width="45%" />
+<col width="37%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Load data</td>
+<td><code>splink_datasets.fake_1000</code></td>
+<td><code>fake_1000</code></td>
+</tr>
+<tr class="even">
+<td>Choose backend</td>
+<td><code>DuckDBAPI()</code></td>
+<td><code>DBI::dbConnect(duckdb::duckdb())</code></td>
+</tr>
+<tr class="odd">
+<td>Register data</td>
+<td><code>db_api.register(df, ...)</code></td>
+<td><em>handled by</em> <code>il_model()</code></td>
+</tr>
+<tr class="even">
+<td>Define settings</td>
+<td><code>SettingsCreator(...)</code></td>
+<td><code>il_spec() |&gt;</code><br><code>il_compare(...) |&gt;</code><br><code>il_block_on(...)</code></td>
+</tr>
+<tr class="odd">
+<td>Create model</td>
+<td><code>Linker(df_sdf, settings)</code></td>
+<td><code>il_model(df, spec = spec, con = con)</code></td>
+</tr>
+<tr class="even">
+<td>Estimate prior</td>
+<td><code>linker.training.</code><br><code>estimate_probability_two_random_records_match(...)</code></td>
+<td><code>il_estimate_prior(model, ...)</code></td>
+</tr>
+<tr class="odd">
+<td>Estimate u</td>
+<td><code>linker.training.</code><br><code>estimate_u_using_random_sampling(...)</code></td>
+<td><code>il_estimate_u(model)</code></td>
+</tr>
+<tr class="even">
+<td>Estimate m (EM)</td>
+<td><code>linker.training.</code><br><code>estimate_parameters_using_expectation_maximisation(...)</code></td>
+<td><code>il_estimate_em(model, ...)</code></td>
+</tr>
+<tr class="odd">
+<td>Estimate m (labels)</td>
+<td><code>linker.training.</code><br><code>estimate_m_from_pairwise_labels(...)</code></td>
+<td><code>il_estimate_m_from_labels(model, ...)</code></td>
+</tr>
+<tr class="even">
+<td>Predict</td>
+<td><code>linker.inference.predict(...)</code></td>
+<td><code>predict(model, ...)</code></td>
+</tr>
+<tr class="odd">
+<td>Cluster</td>
+<td><code>linker.clustering.</code><br><code>cluster_pairwise_predictions_at_threshold(...)</code></td>
+<td><code>il_cluster(pairs)</code></td>
+</tr>
+<tr class="even">
+<td>Deterministic link</td>
+<td><code>linker.deterministic_link()</code></td>
+<td><code>il_deterministic_link(df, ...)</code></td>
+</tr>
+<tr class="odd">
+<td>Match new records</td>
+<td><code>linker.inference.</code><br><code>predict_between(df_sdf, new_sdf, ...)</code></td>
+<td><code>il_find_matches(model, new_records, ...)</code></td>
+</tr>
+<tr class="even">
+<td>Pairs within new records</td>
+<td><code>linker.inference.</code><br><code>predict_within(new_sdf, ...)</code></td>
+<td><code>il_attach(model, new_records) |&gt;</code><br><code>predict(...)</code></td>
+</tr>
+<tr class="odd">
+<td>Score chosen pairs</td>
+<td><code>linker.inference.</code><br><code>score_pair(...)</code>,
+<code>score_pairs(...)</code></td>
+<td><code>il_score_pairs(model, records_l, records_r)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Splink 5 requires registering each input with
+<code>db_api.register()</code> before building a <code>Linker</code>,
+and the <code>Linker</code> no longer takes <code>db_api</code>. In
+<code>irelink</code>, <code>il_model()</code> registers data frames,
+lazy tables, or table names on the supplied connection itself.</p>
+<p><code>irelink</code> also supports
+<code>link_type = &quot;link_and_dedupe&quot;</code> for two-table jobs where
+duplicates may exist within each input table and across the two
+tables.</p>
+<p><code>irelink</code> scores in-memory inputs and DBI-backed tables,
+including lazy DuckDB results. Splink 5’s chunked prediction, DuckDB
+source pruning, and Parquet-backed intermediate tables are not
+available, so very large workflows should rely on explicit blocking and
+<code>predict(collect = FALSE)</code>.</p>
+</div>
+<div id="comparison-levels" class="section level2">
+<h2>Comparison levels</h2>
+<p>Comparison levels are the building blocks used to score how similar
+two records are on a field. Each <code>cl_*()</code> function
+corresponds to a Splink comparison level class.</p>
+<table>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ExactMatchLevel</code></td>
+<td><code>cl_exact()</code></td>
+</tr>
+<tr class="even">
+<td><code>LevenshteinLevel</code></td>
+<td><code>cl_levenshtein()</code></td>
+</tr>
+<tr class="odd">
+<td><code>DamerauLevenshteinLevel</code></td>
+<td><code>cl_damerau_levenshtein()</code></td>
+</tr>
+<tr class="even">
+<td><code>JaroLevel</code></td>
+<td><code>cl_jaro()</code></td>
+</tr>
+<tr class="odd">
+<td><code>JaroWinklerLevel</code></td>
+<td><code>cl_jaro_winkler()</code></td>
+</tr>
+<tr class="even">
+<td><code>JaccardLevel</code></td>
+<td><code>cl_jaccard()</code></td>
+</tr>
+<tr class="odd">
+<td><code>CosineSimilarityLevel</code></td>
+<td><code>cl_cosine()</code></td>
+</tr>
+<tr class="even">
+<td><code>AbsoluteDifferenceLevel</code></td>
+<td><code>cl_numeric_diff()</code></td>
+</tr>
+<tr class="odd">
+<td><code>PercentageDifferenceLevel</code></td>
+<td><code>cl_pct_diff()</code></td>
+</tr>
+<tr class="even">
+<td><code>AbsoluteTimeDifferenceAtThresholds</code></td>
+<td><code>cl_date_diff()</code></td>
+</tr>
+<tr class="odd">
+<td><code>DistanceInKMLevel</code></td>
+<td><code>cl_geo_distance()</code></td>
+</tr>
+<tr class="even">
+<td><code>ArrayIntersectLevel</code></td>
+<td><code>cl_array_intersect()</code></td>
+</tr>
+<tr class="odd">
+<td><code>CustomLevel</code></td>
+<td><code>cl_custom()</code></td>
+</tr>
+<tr class="even">
+<td><code>NullLevel</code></td>
+<td><code>cl_null()</code></td>
+</tr>
+<tr class="odd">
+<td><code>ElseLevel</code></td>
+<td><code>cl_else()</code></td>
+</tr>
+<tr class="even">
+<td><code>And</code></td>
+<td><code>cl_and()</code></td>
+</tr>
+<tr class="odd">
+<td><code>Or</code></td>
+<td><code>cl_or()</code></td>
+</tr>
+<tr class="even">
+<td><code>Not</code></td>
+<td><code>cl_not()</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="domain-specific-comparisons" class="section level2">
+<h2>Domain-specific comparisons</h2>
+<p>Splink provides high-level comparison classes for common field types.
+In <code>irelink</code>, these are helper functions that return
+preconfigured sets of levels.</p>
+<table>
+<colgroup>
+<col width="56%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>NameComparison</code></td>
+<td><code>cl_name()</code></td>
+</tr>
+<tr class="even">
+<td><code>ForenameSurnameComparison</code></td>
+<td><code>cl_forename_surname()</code></td>
+</tr>
+<tr class="odd">
+<td><code>DateOfBirthComparison</code></td>
+<td><code>cl_dob()</code> (Levenshtein for one-character typos)</td>
+</tr>
+<tr class="even">
+<td><code>EmailComparison</code></td>
+<td><code>cl_email()</code></td>
+</tr>
+<tr class="odd">
+<td><code>PostcodeComparison</code></td>
+<td><code>cl_postcode()</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="model-inspection" class="section level2">
+<h2>Model inspection</h2>
+<table>
+<colgroup>
+<col width="56%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>linker.visualisations.match_weights_chart()</code></td>
+<td><code>il_weights(model)</code></td>
+</tr>
+<tr class="even">
+<td><code>linker.visualisations.</code><br><code>parameter_estimate_comparisons_chart()</code></td>
+<td><code>il_parameters(model)</code></td>
+</tr>
+<tr class="odd">
+<td><code>linker.visualisations.waterfall_chart(...)</code></td>
+<td><code>il_waterfall(pairs, ...)</code></td>
+</tr>
+<tr class="even">
+<td><em>comparison levels for a pair, without a model</em></td>
+<td><code>il_compare_records(record_a, record_b, spec)</code></td>
+</tr>
+<tr class="odd">
+<td><code>linker.evaluation.</code><br><code>prediction_errors_from_labels_column(...)</code></td>
+<td><code>il_errors(model, ...)</code></td>
+</tr>
+<tr class="even">
+<td><code>linker.evaluation.unlinkables_chart()</code></td>
+<td><code>il_unlinkables(model)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="evaluation" class="section level2">
+<h2>Evaluation</h2>
+<p>Splink 5 combines these analyses in
+<code>linker.evaluation.accuracy_analysis_from_labels_column()</code>,
+selected with <code>output_type</code>.</p>
+<table>
+<colgroup>
+<col width="56%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>accuracy_analysis_from_labels_column(</code><br><code>..., output_type=&quot;accuracy&quot;)</code></td>
+<td><code>il_accuracy(model, ...)</code></td>
+</tr>
+<tr class="even">
+<td><code>accuracy_analysis_from_labels_column(</code><br><code>..., output_type=&quot;precision_recall&quot;)</code></td>
+<td><code>il_precision_recall(model, ...)</code></td>
+</tr>
+<tr class="odd">
+<td><code>accuracy_analysis_from_labels_column(</code><br><code>..., output_type=&quot;roc&quot;)</code></td>
+<td><code>il_roc(model, ...)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="data-profiling" class="section level2">
+<h2>Data profiling</h2>
+<table>
+<colgroup>
+<col width="56%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>splink.exploratory.profile_columns(...)</code></td>
+<td><code>il_profile(df, ...)</code></td>
+</tr>
+<tr class="even">
+<td><code>splink.exploratory.completeness_chart(...)</code></td>
+<td><code>il_completeness(df, ...)</code></td>
+</tr>
+<tr class="odd">
+<td><code>splink.blocking_analysis.</code><br><code>count_comparisons_from_blocking_rules(...)</code></td>
+<td><code>il_count_pairs(df, ...)</code></td>
+</tr>
+<tr class="even">
+<td><code>splink.blocking_analysis.n_largest_blocks(...)</code></td>
+<td><code>il_largest_blocks(df, ...)</code></td>
+</tr>
+</tbody>
+</table>
+<p>Splink 5 estimates blocking comparison counts from a 5% record sample
+by default. <code>il_count_pairs()</code> computes exact counts unless
+you set <code>record_sample_proportion</code> below 1.</p>
+</div>
+<div id="persistence" class="section level2">
+<h2>Persistence</h2>
+<table>
+<colgroup>
+<col width="56%" />
+<col width="43%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>splink (Python)</th>
+<th>irelink (R)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>linker.misc.save_model_to_json(...)</code></td>
+<td><code>il_save(model, path)</code></td>
+</tr>
+<tr class="even">
+<td><code>Linker(df_sdf, &quot;model.json&quot;)</code></td>
+<td><code>il_load(path)</code></td>
+</tr>
+<tr class="odd">
+<td><code>linker.table_management.</code><br><code>delete_tables_created_by_splink_from_db()</code></td>
+<td><code>il_cleanup_all(con)</code></td>
+</tr>
+<tr class="even">
+<td><em>model-scoped cleanup</em></td>
+<td><code>il_cleanup(model)</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="blocking-rules" class="section level2">
+<h2>Blocking rules</h2>
+<p>In Splink, you create blocking rules with <code>block_on()</code>,
+and <code>irelink</code> uses the same function name. The main
+difference is where the rules are used: Splink passes them into
+<code>SettingsCreator</code>, while <code>irelink</code> adds them to a
+spec with <code>il_block_on()</code> or passes them directly to training
+functions.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># blocking in the spec</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">il_spec</span>() <span class="sc">|&gt;</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">il_compare</span>(first_name, <span class="fu">cl_jaro_winkler</span>(<span class="fl">0.9</span>, <span class="fl">0.7</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">il_block_on</span>(surname)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co"># blocking in EM training</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_estimate_em</span>(model, <span class="fu">block_on</span>(surname))</span></code></pre></div>
+</div>
+<div id="example-side-by-side-deduplication" class="section level2">
+<h2>Example: side-by-side deduplication</h2>
+<p>Below is a minimal deduplication example in both Splink and
+<code>irelink</code>.</p>
+<p><strong>splink (Python):</strong></p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="im">from</span> splink <span class="im">import</span> Linker, SettingsCreator, DuckDBAPI, block_on, splink_datasets</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="im">import</span> splink.comparison_library <span class="im">as</span> cl</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>db_api <span class="op">=</span> DuckDBAPI()</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>df_sdf <span class="op">=</span> db_api.register(splink_datasets.fake_1000, dataset_display_name<span class="op">=</span><span class="st">&quot;fake_1000&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>settings <span class="op">=</span> SettingsCreator(</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>    link_type<span class="op">=</span><span class="st">&quot;dedupe_only&quot;</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>    comparisons<span class="op">=</span>[</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>        cl.JaroWinklerAtThresholds(<span class="st">&quot;first_name&quot;</span>, [<span class="fl">0.9</span>, <span class="fl">0.7</span>]),</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>        cl.JaroWinklerAtThresholds(<span class="st">&quot;surname&quot;</span>, [<span class="fl">0.9</span>, <span class="fl">0.7</span>]),</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>        cl.ExactMatch(<span class="st">&quot;dob&quot;</span>),</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>    ],</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>    blocking_rules_to_generate_predictions<span class="op">=</span>[</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>        block_on(<span class="st">&quot;first_name&quot;</span>),</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>        block_on(<span class="st">&quot;surname&quot;</span>),</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>    ],</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>)</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>linker <span class="op">=</span> Linker(df_sdf, settings)</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>linker.training.estimate_u_using_random_sampling(max_pairs<span class="op">=</span><span class="fl">1e6</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>linker.training.estimate_parameters_using_expectation_maximisation(</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>    block_on(<span class="st">&quot;surname&quot;</span>)</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>)</span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>pairwise <span class="op">=</span> linker.inference.predict(threshold_match_probability<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a>clusters <span class="op">=</span> linker.clustering.cluster_pairwise_predictions_at_threshold(</span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>    pairwise, <span class="fl">0.95</span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>irelink (R):</strong></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(irelink)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>df <span class="ot">&lt;-</span> fake_1000</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>con <span class="ot">&lt;-</span> DBI<span class="sc">::</span><span class="fu">dbConnect</span>(duckdb<span class="sc">::</span><span class="fu">duckdb</span>())</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">il_spec</span>() <span class="sc">|&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="fu">il_compare</span>(first_name, <span class="fu">cl_jaro_winkler</span>(<span class="fl">0.9</span>, <span class="fl">0.7</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="fu">il_compare</span>(surname, <span class="fu">cl_jaro_winkler</span>(<span class="fl">0.9</span>, <span class="fl">0.7</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="fu">il_compare</span>(dob, <span class="fu">cl_exact</span>()) <span class="sc">|&gt;</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="fu">il_block_on</span>(first_name) <span class="sc">|&gt;</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  <span class="fu">il_block_on</span>(surname)</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_model</span>(df, <span class="at">spec =</span> spec, <span class="at">con =</span> con)</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_estimate_u</span>(model)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">il_estimate_em</span>(model, <span class="fu">block_on</span>(surname))</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>pairs <span class="ot">&lt;-</span> <span class="fu">predict</span>(model, <span class="at">threshold =</span> <span class="fl">0.5</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>clusters <span class="ot">&lt;-</span> <span class="fu">il_cluster</span>(pairs)</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="fu">il_cleanup</span>(model)</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>DBI<span class="sc">::</span><span class="fu">dbDisconnect</span>(con, <span class="at">shutdown =</span> <span class="cn">TRUE</span>)</span></code></pre></div>
+<p>The examples above use probability thresholds because those transfer
+cleanly between Splink and <code>irelink</code>. In Splink, prediction
+<code>match_weight</code> includes the prior odds. In
+<code>irelink</code>, <code>match_weight</code> is evidence only, and
+<code>total_match_weight</code> is the prior-inclusive log2 odds. Keep
+that difference in mind if you translate match-weight thresholds between
+the two packages.</p>
+</div>
+<div id="example-finding-matches-against-new-records" class="section level2">
+<h2>Example: finding matches against new records</h2>
+<p><strong>splink (Python):</strong></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>new_sdf <span class="op">=</span> db_api.register(</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>    [{<span class="st">&quot;unique_id&quot;</span>: <span class="dv">1001</span>, <span class="st">&quot;first_name&quot;</span>: <span class="st">&quot;Jhon&quot;</span>, <span class="st">&quot;surname&quot;</span>: <span class="st">&quot;Smith&quot;</span>, <span class="st">&quot;dob&quot;</span>: <span class="st">&quot;1990-01-15&quot;</span>}],</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>    dataset_display_name<span class="op">=</span><span class="st">&quot;new_records&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>)</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>results <span class="op">=</span> linker.inference.predict_between(</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    df_sdf, new_sdf, threshold_match_probability<span class="op">=</span><span class="fl">0.5</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>)</span></code></pre></div>
+<p><strong>irelink (R):</strong></p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>new_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">first_name =</span> <span class="st">&quot;Jhon&quot;</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">surname =</span> <span class="st">&quot;Smith&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">dob =</span> <span class="st">&quot;1990-01-15&quot;</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">il_find_matches</span>(model, new_df, <span class="at">threshold =</span> <span class="fl">0.5</span>)</span></code></pre></div>
+<p><code>il_find_matches()</code> corresponds to
+<code>predict_between()</code>: it scores new records against the
+model’s existing data, but not new records against each other. For
+Splink 5’s <code>predict_within()</code>, attach the new records to the
+trained model with <code>il_attach()</code> and call
+<code>predict()</code>. Note that <code>il_attach()</code> computes term
+frequencies from the attached records. When those are too few to be
+representative, replace them with term frequencies from the full data
+using <code>il_register_tf(..., overwrite = TRUE)</code>.</p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

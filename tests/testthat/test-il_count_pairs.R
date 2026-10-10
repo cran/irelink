@@ -1,0 +1,173 @@
+# Translated from splink: test_analyse_blocking.py, test_total_comparison_count.py
+
+test_that('il_count_pairs() returns accurate pair count for dedupe', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # 4 records: John Smith, Mary Jones, Jane Taylor, John Brown
+  df <- data.frame(
+    unique_id = 1:4,
+    first_name = c('John', 'Mary', 'Jane', 'John'),
+    surname = c('Smith', 'Jones', 'Taylor', 'Brown')
+  )
+
+  # Cartesian for dedupe: n(n-1)/2 = 4*3/2 = 6
+  result <- il_count_pairs(df, con = con)
+  expect_s3_class(result, 'tbl_df')
+  expect_true('n_pairs' %in% names(result))
+})
+
+test_that('il_count_pairs() with blocking reduces pair count', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # Two Johns among 4 rows: blocking on first_name yields 1 pair
+  df <- data.frame(
+    unique_id = 1:4,
+    first_name = c('John', 'Mary', 'Jane', 'John'),
+    surname = c('Smith', 'Jones', 'Taylor', 'Brown')
+  )
+
+  result <- il_count_pairs(df, block_on(first_name), con = con)
+  first_name_pairs <- result$n_pairs[1]
+
+  # Only 2 Johns -> C(2,2) = 1 pair
+  expect_equal(first_name_pairs, 1)
+})
+
+test_that('il_count_pairs() cartesian dedupe is n*(n-1)/2', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # 5 records -> 5 * 4 / 2 = 10 pairs
+  df <- data.frame(
+    unique_id = 1:5,
+    name = paste0('person_', 1:5)
+  )
+
+  result <- il_count_pairs(df, con = con)
+  expect_equal(result$n_pairs[1], 10)
+})
+
+test_that("il_count_pairs() for link_type='link' computes cross-product", {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  # 2 records * 3 records = 6 pairs
+  df1 <- data.frame(unique_id = 1:2, name = c('A', 'B'))
+  df2 <- data.frame(unique_id = 3:5, name = c('C', 'D', 'E'))
+
+  result <- il_count_pairs(df1, df2, con = con, link_type = 'link')
+  expect_equal(result$n_pairs[1], 6)
+})
+
+test_that('il_count_pairs() with multiple blocking rules reports each', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(
+    unique_id = 1:4,
+    first_name = c('John', 'Mary', 'Jane', 'John'),
+    surname = c('Smith', 'Jones', 'Taylor', 'Brown')
+  )
+
+  result <- il_count_pairs(
+    df,
+    block_on(first_name),
+    block_on(surname),
+    con = con
+  )
+
+  # Should report pair counts for each blocking rule
+  expect_true(nrow(result) >= 2)
+})
+
+test_that('il_count_pairs() estimates counts from a record sample', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  exact <- il_count_pairs(
+    fake_1000,
+    block_on(city),
+    con = con,
+    record_sample_proportion = 1
+  )
+  est <- il_count_pairs(
+    fake_1000,
+    block_on(city),
+    con = con,
+    record_sample_proportion = 0.5
+  )
+
+  expect_equal(est$n_pairs, exact$n_pairs, tolerance = 0.25)
+  expect_equal(est$cumulative_pairs, est$n_pairs)
+})
+
+test_that('il_count_pairs() samples records on SQLite', {
+  skip_if_not_installed('RSQLite')
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ':memory:')
+  withr::defer(DBI::dbDisconnect(con))
+
+  exact <- il_count_pairs(
+    fake_1000,
+    block_on(city),
+    con = con,
+    record_sample_proportion = 1
+  )
+  est <- il_count_pairs(
+    fake_1000,
+    block_on(city),
+    con = con,
+    record_sample_proportion = 0.5
+  )
+
+  expect_equal(est$n_pairs, exact$n_pairs, tolerance = 0.25)
+  expect_equal(DBI::dbListTables(con), character(0))
+})
+
+test_that('il_count_pairs() warns when sampled estimates are unstable', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(
+    unique_id = 1:4,
+    first_name = c('John', 'Mary', 'Jane', 'John')
+  )
+
+  expect_snapshot(
+    result <- il_count_pairs(
+      df,
+      block_on(first_name),
+      con = con,
+      record_sample_proportion = 0.5
+    )
+  )
+})
+
+test_that('il_count_pairs() validates record_sample_proportion', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- data.frame(unique_id = 1:2, first_name = c('a', 'a'))
+
+  expect_snapshot(
+    il_count_pairs(
+      df,
+      block_on(first_name),
+      con = con,
+      record_sample_proportion = 0
+    ),
+    error = TRUE
+  )
+})

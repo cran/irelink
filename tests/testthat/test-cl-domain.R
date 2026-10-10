@@ -1,0 +1,270 @@
+# Domain-knowledge comparison bundles
+
+# --- Vectorized structure and term_frequency tests ---
+
+test_that('domain bundles return il_comparison_level objects', {
+  bundles <- list(
+    cl_name(),
+    cl_email(),
+    cl_dob(),
+    cl_postcode(),
+    cl_forename_surname(),
+    cl_zip_code()
+  )
+  classes <- vapply(
+    bundles,
+    function(b) inherits(b, 'il_comparison_level'),
+    logical(1)
+  )
+  expect_true(all(classes))
+})
+
+test_that('domain bundles accept term_frequency flag', {
+  bundles <- list(
+    cl_name(term_frequency = TRUE),
+    cl_email(term_frequency = TRUE),
+    cl_dob(term_frequency = TRUE),
+    cl_postcode(term_frequency = TRUE),
+    cl_forename_surname(term_frequency = TRUE),
+    cl_zip_code(term_frequency = TRUE)
+  )
+  tf_flags <- vapply(bundles, function(b) b$term_frequency, logical(1))
+  expect_true(all(tf_flags))
+})
+
+# --- cl_name() ------------------------------------------------------------
+
+test_that('cl_name() produces equivalent structure to manual composition', {
+  bundle <- cl_name()
+  manual <- cl_levels(
+    cl_null(),
+    cl_exact(),
+    cl_jaro_winkler(0.92),
+    cl_jaro_winkler(0.88),
+    cl_jaro_winkler(0.7),
+    cl_else()
+  )
+  # Both should have the same number of levels
+  expect_equal(length(bundle$levels), length(manual$levels))
+})
+
+# --- cl_soundex() ---------------------------------------------------------
+
+test_that('cl_soundex() returns a comparison level with soundex method', {
+  lev <- cl_soundex()
+  expect_s3_class(lev, 'il_comparison_level')
+  expect_equal(lev$method, 'soundex')
+})
+
+test_that('cl_name(phonetic = TRUE) adds a soundex level', {
+  without <- cl_name()
+  with_phonetic <- cl_name(phonetic = TRUE)
+  expect_equal(length(with_phonetic$levels), length(without$levels) + 1L)
+  methods <- vapply(with_phonetic$levels, `[[`, character(1), 'method')
+  expect_true('soundex' %in% methods)
+})
+
+test_that('cl_name(phonetic = TRUE) places soundex before else', {
+  lev <- cl_name(phonetic = TRUE)
+  n <- length(lev$levels)
+  expect_equal(lev$levels[[n]]$method, 'else')
+  expect_equal(lev$levels[[n - 1L]]$method, 'soundex')
+})
+
+# --- cl_email() -----------------------------------------------------------
+
+test_that('cl_email() has at least 4 match levels', {
+  lev <- cl_email()
+  expect_true(length(lev$levels) >= 4)
+})
+
+# --- cl_dob() -------------------------------------------------------------
+
+test_that('cl_dob() has at least 4 match levels', {
+  lev <- cl_dob()
+  expect_true(length(lev$levels) >= 4)
+  expect_equal(lev$levels[[3]]$method, 'levenshtein')
+})
+
+test_that('cl_dob() uses Levenshtein semantics in R and DuckDB', {
+  level <- cl_dob()$levels[[3]]
+  # Transposition is Damerau distance 1 but Levenshtein distance 2.
+  expect_equal(
+    compute_gamma(
+      c('1990-01-12', '1990-01-12'),
+      c('1990-01-21', '1990-01-13'),
+      level
+    ),
+    c(0L, 1L)
+  )
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+  sql <- sql_gamma_case(
+    list(columns = 'dob', method = level, transform = NULL),
+    dialect = 'duckdb'
+  )
+  expect_match(sql, 'levenshtein(', fixed = TRUE)
+  result <- DBI::dbGetQuery(
+    con,
+    glue::glue(
+      'SELECT {sql} AS gamma FROM ',
+      "(VALUES ('1990-01-12')) AS l(\"dob\") CROSS JOIN ",
+      "(VALUES ('1990-01-13')) AS r(\"dob\")"
+    )
+  )
+  expect_equal(result$gamma, 1L)
+  transposed <- DBI::dbGetQuery(
+    con,
+    glue::glue(
+      'SELECT {sql} AS gamma FROM ',
+      "(VALUES ('1990-01-12')) AS l(\"dob\") CROSS JOIN ",
+      "(VALUES ('1990-01-21')) AS r(\"dob\")"
+    )
+  )
+  expect_equal(transposed$gamma, 0L)
+})
+
+test_that('cl_dob() accepts custom thresholds', {
+  lev <- cl_dob(thresholds = list(days(7), months(6)))
+  date_methods <- vapply(lev$levels, `[[`, character(1), 'method')
+  expect_equal(sum(date_methods == 'date_diff'), 2L)
+})
+
+test_that('cl_dob() custom thresholds change level count', {
+  default_lev <- cl_dob()
+  custom_lev <- cl_dob(
+    thresholds = list(days(7), months(6), years(1), years(5))
+  )
+  expect_equal(
+    length(custom_lev$levels),
+    length(default_lev$levels) + 1L
+  )
+})
+
+test_that('cl_dob() rejects empty thresholds', {
+  expect_snapshot(error = TRUE, cl_dob(thresholds = list()))
+})
+
+# --- cl_postcode() --------------------------------------------------------
+
+test_that('cl_postcode() has at least 4 match levels', {
+  lev <- cl_postcode()
+  expect_true(length(lev$levels) >= 4)
+})
+
+test_that('cl_postcode() appends geo levels when lat/lon supplied', {
+  lev <- cl_postcode(
+    lat_col = 'lat',
+    long_col = 'lon',
+    km_thresholds = c(5, 50)
+  )
+  methods <- vapply(lev$levels, `[[`, character(1), 'method')
+  # Two extra custom levels before else
+  expect_equal(sum(methods == 'custom'), 5L) # 3 prefix + 2 geo
+  expect_equal(methods[length(methods)], 'else')
+})
+
+test_that('cl_postcode() geo SQL embeds lat/lon column names', {
+  lev <- cl_postcode(
+    lat_col = 'latitude',
+    long_col = 'longitude',
+    km_thresholds = 10
+  )
+  custom_levels <- Filter(function(l) l$method == 'custom', lev$levels)
+  geo_sqls <- vapply(custom_levels, `[[`, character(1), 'sql_expr')
+  geo_sql <- geo_sqls[grepl('ASIN', geo_sqls)][1]
+  expect_match(geo_sql, 'latitude')
+  expect_match(geo_sql, 'longitude')
+})
+
+# --- cl_forename_surname() / cl_first_last_name() -------------------------
+
+test_that('cl_forename_surname() has the expected number of levels', {
+  lev <- cl_forename_surname()
+  # null + exact + swap + JW(0.92) + JW(0.88) + else = 6
+  expect_equal(length(lev$levels), 6)
+})
+
+test_that('cl_forename_surname() embeds surname column in swap SQL', {
+  lev <- cl_forename_surname(surname = 'last_name')
+  swap_level <- lev$levels[[3]]
+  expect_match(swap_level$sql_expr, 'last_name')
+})
+
+test_that('cl_first_last_name() is an alias for cl_forename_surname()', {
+  lev_alias <- cl_first_last_name(last_name = 'surname')
+  lev_orig <- cl_forename_surname(surname = 'surname')
+  expect_equal(lev_alias, lev_orig)
+})
+
+test_that('cl_first_last_name() embeds last_name column in swap SQL', {
+  lev <- cl_first_last_name(last_name = 'family_name')
+  swap_level <- lev$levels[[3]]
+  expect_match(swap_level$sql_expr, 'family_name')
+})
+
+# --- cl_zip_code() --------------------------------------------------------
+
+test_that('cl_zip_code() has the expected number of levels', {
+  lev <- cl_zip_code()
+  expect_equal(length(lev$levels), 5)
+})
+
+test_that('cl_zip_code() uses fixed-width SUBSTR for prefix levels', {
+  lev <- cl_zip_code()
+  five_digit <- lev$levels[[3]]
+  three_digit <- lev$levels[[4]]
+  expect_match(five_digit$sql_expr, 'SUBSTR.*1, 5')
+  expect_match(three_digit$sql_expr, 'SUBSTR.*1, 3')
+})
+
+test_that('cl_zip_code() appends geo levels when lat/lon supplied', {
+  lev <- cl_zip_code(
+    lat_col = 'lat',
+    long_col = 'lon',
+    km_thresholds = c(1, 10)
+  )
+  methods <- vapply(lev$levels, `[[`, character(1), 'method')
+  expect_equal(sum(methods == 'custom'), 4L) # 2 prefix + 2 geo
+})
+
+# --- cl_array_subset() --------------------------------------------------------
+
+test_that('cl_array_subset() returns a comparison level', {
+  lev <- cl_array_subset()
+  expect_s3_class(lev, 'il_comparison_level')
+  expect_equal(lev$method, 'array_subset')
+})
+
+test_that('cl_array_subset() is distinct from cl_array_intersect()', {
+  expect_false(identical(cl_array_subset(), cl_array_intersect(1)))
+})
+
+# --- cl_literal() -------------------------------------------------------------
+
+test_that('cl_literal() generates both-side SQL by default', {
+  lev <- cl_literal('US')
+  expect_s3_class(lev, 'il_comparison_level')
+  expect_match(lev$sql_expr, "l\\.\\{col\\} = 'US'")
+  expect_match(lev$sql_expr, "r\\.\\{col\\} = 'US'")
+})
+
+test_that('cl_literal() left side only', {
+  lev <- cl_literal('US', side = 'left')
+  expect_match(lev$sql_expr, 'l\\.\\{col\\}')
+  expect_false(grepl('r\\.\\{col\\}', lev$sql_expr))
+})
+
+test_that('cl_literal() numeric values are not quoted', {
+  lev <- cl_literal(1L)
+  expect_false(grepl("'", lev$sql_expr))
+})
+
+test_that('cl_literal() escapes quotes and uses IS NULL for missing values', {
+  quoted <- cl_literal("O'Reilly")
+  missing <- cl_literal(NA_character_)
+  expect_match(quoted$sql_expr, "O''Reilly", fixed = TRUE)
+  expect_match(missing$sql_expr, 'IS NULL', fixed = TRUE)
+  expect_false(grepl('= NULL', missing$sql_expr, fixed = TRUE))
+})

@@ -1,0 +1,91 @@
+#' Compute ROC Curve Data
+#'
+#' Returns a tidy tibble of false-positive rates and true-positive rates
+#' at each match-probability threshold, for plotting an ROC curve.
+#' Requires labeled pairs. Designed for use with [ggplot2::geom_line()].
+#'
+#' @param model A trained `il_model` object.
+#' @param labels A data frame of labeled pairs with a logical or integer
+#'   match indicator. Required unless `labels_col` is provided.
+#' @param labels_col Optional string naming a column in the original data
+#'   containing ground-truth cluster/entity IDs.
+#'
+#' @return A [tibble::tibble()] with columns `threshold`, `fpr`, and `tpr`.
+#' @export
+#'
+#' @examples
+#' df <- data.frame(
+#'   unique_id = 1:20,
+#'   first_name = c(
+#'     'John', 'Jon', 'Jane', 'Jane', 'Bob',
+#'     'Bobby', 'Alice', 'Alicia', 'Tom', 'Thomas',
+#'     'John', 'Jon', 'Jane', 'Janet', 'Bob',
+#'     'Robert', 'Alice', 'Alison', 'Tom', 'Tomas'
+#'   ),
+#'   surname = c(
+#'     'Smith', 'Smith', 'Doe', 'Doe', 'Jones',
+#'     'Jones', 'Brown', 'Brown', 'White', 'White',
+#'     'Smith', 'Smyth', 'Doe', 'Doe', 'Jones',
+#'     'Jones', 'Brown', 'Browne', 'White', 'White'
+#'   ),
+#'   dob = c(
+#'     '1990-01-01', '1990-01-01', '1985-06-15', '1985-06-15',
+#'     '2000-12-01', '2000-12-01', '1975-03-22', '1975-03-22',
+#'     '1988-07-04', '1988-07-04', '1990-01-01', '1990-01-02',
+#'     '1985-06-15', '1985-06-16', '2000-12-01', '2000-12-02',
+#'     '1975-03-22', '1975-03-23', '1988-07-04', '1988-07-05'
+#'   ),
+#'   city = c(
+#'     'London', 'London', 'Paris', 'Paris', 'Berlin',
+#'     'Berlin', 'Rome', 'Rome', 'Madrid', 'Madrid',
+#'     'London', 'London', 'Paris', 'Paris', 'Berlin',
+#'     'Berlin', 'Rome', 'Rome', 'Madrid', 'Madrid'
+#'   ),
+#'   email = c(
+#'     'john@example.com', 'jon@example.com', 'jane@example.com',
+#'     'jane@example.com', 'bob@example.com', 'bobby@example.com',
+#'     'alice@example.com', 'alicia@example.com', 'tom@example.com',
+#'     'thomas@example.com', 'john@example.com', 'jon@example.com',
+#'     'jane@example.com', 'janet@example.com', 'bob@example.com',
+#'     'robert@example.com', 'alice@example.com', 'alison@example.com',
+#'     'tom@example.com', 'tomas@example.com'
+#'   )
+#' )
+#' con <- DBI::dbConnect(duckdb::duckdb())
+#' spec <- il_spec() |>
+#'   il_compare(first_name, cl_jaro_winkler(0.9, 0.7)) |>
+#'   il_compare(surname, cl_jaro_winkler(0.9, 0.7)) |>
+#'   il_compare(dob, cl_exact()) |>
+#'   il_block_on(surname) |>
+#'   il_block_on(first_name)
+#' model <- il_model(df, spec = spec, con = con)
+#' model <- il_estimate_u(model)
+#' model <- il_estimate_em(model, block_on(surname))
+#' labels <- data.frame(
+#'   unique_id_l = c(1L, 1L),
+#'   unique_id_r = c(11L, 2L),
+#'   is_match = c(1L, 0L)
+#' )
+#'
+#' il_roc(model, labels = labels)
+#' DBI::dbDisconnect(con, shutdown = TRUE)
+il_roc <- function(model, labels = NULL, labels_col = NULL) {
+  labels <- resolve_labels(model, labels, labels_col)
+  acc <- il_accuracy(model, labels)
+  roc <- tibble::tibble(
+    threshold = acc$threshold,
+    fpr = acc$fp / pmax(acc$fp + acc$tn, 1L),
+    tpr = acc$tp / pmax(acc$tp + acc$fn, 1L)
+  )
+
+  # Start the curve at (0, 0); a threshold of 1 can still predict pairs with probability 1.
+  if (!any(roc$fpr == 0 & roc$tpr == 0)) {
+    roc <- rbind(
+      tibble::tibble(threshold = Inf, fpr = 0, tpr = 0),
+      roc
+    )
+  }
+
+  roc |>
+    add_class('il_roc')
+}

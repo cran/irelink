@@ -1,0 +1,202 @@
+# Translated from splink: test_compare_two_records.py, test_find_new_matches.py
+
+# il_compare_records(): from test_compare_two_records.py
+
+test_that('il_compare_records() scores a known pair', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact())
+
+  record_a <- list(first_name = 'John', surname = 'Smith')
+  record_b <- list(first_name = 'John', surname = 'Smyth')
+
+  result <- il_compare_records(record_a, record_b, spec = spec, con = con)
+
+  expect_s3_class(result, 'tbl_df')
+  expect_true(nrow(result) == 1)
+})
+
+test_that('il_compare_records() shows exact match on identical records', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact())
+
+  record <- list(first_name = 'Julia', surname = 'Taylor')
+
+  result <- il_compare_records(record, record, spec = spec, con = con)
+  # Identical records should get gamma = highest level for all comparisons
+  gamma_cols <- grep('^gamma_', names(result), value = TRUE)
+  # For exact match, gamma should be the top level
+  expect_true(all(result[, gamma_cols] > 0))
+})
+
+test_that('il_compare_records() validates row count and required columns', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact())
+
+  expect_error(
+    il_compare_records(
+      data.frame(first_name = c('A', 'B'), surname = c('C', 'D')),
+      list(first_name = 'A', surname = 'C'),
+      spec = spec,
+      con = con
+    ),
+    'exactly one row'
+  )
+
+  expect_error(
+    il_compare_records(
+      list(first_name = 'A'),
+      list(first_name = 'A', surname = 'C'),
+      spec = spec,
+      con = con
+    ),
+    'missing'
+  )
+})
+
+# il_find_matches(): from test_find_new_matches.py
+
+test_that('il_find_matches() returns matches for a new record', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- fake_1000
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(surname)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(max_pairs = 1e6) |>
+    il_estimate_em(block_on(first_name, surname))
+
+  # From: test_find_new_matches — find matches for "Eliza Smith"
+  new_record <- data.frame(
+    first_name = 'Eliza',
+    surname = 'Smith',
+    stringsAsFactors = FALSE
+  )
+
+  # With very permissive threshold, should find all surname="Smith"
+  matches <- il_find_matches(model, new_record, threshold = 0.01)
+  expect_s3_class(matches, 'tbl_df')
+  expect_true(nrow(matches) > 0)
+})
+
+test_that('il_find_matches() validates trained model, threshold, and required columns', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- fake_1000[1:20, ]
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(surname)
+
+  model <- il_model(df, spec = spec, con = con)
+  expect_error(
+    il_find_matches(model, data.frame(first_name = 'A', surname = 'B')),
+    'trained'
+  )
+
+  trained <- model |>
+    il_estimate_u(max_pairs = 100) |>
+    il_estimate_em(block_on(surname))
+  expect_error(
+    il_find_matches(
+      trained,
+      data.frame(first_name = 'A', surname = 'B'),
+      threshold = NA_real_
+    ),
+    'threshold'
+  )
+
+  DBI::dbWriteTable(
+    con,
+    'new_missing_surname',
+    data.frame(first_name = 'A'),
+    overwrite = TRUE
+  )
+  expect_error(
+    il_find_matches(trained, 'new_missing_surname'),
+    'missing'
+  )
+})
+
+# --- il_waterfall() -------------------------------------------------------
+
+test_that('il_waterfall() returns per-comparison weight contributions', {
+  skip_if_not_installed('RSQLite')
+
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- fake_1000
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(first_name)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(max_pairs = 1e6) |>
+    il_estimate_em(block_on(first_name))
+
+  pairs <- predict(model, threshold = 0.5)
+
+  if (nrow(pairs) > 0) {
+    wf <- il_waterfall(pairs, which = 1L)
+    expect_s3_class(wf, 'tbl_df')
+    expect_equal(wf$step[1], 'Prior')
+    expect_equal(wf$step[nrow(wf)], 'Final')
+    expect_true(all(c('start', 'end', 'direction') %in% names(wf)))
+
+    comp_rows <- wf[!(wf$direction %in% c('prior', 'final')), , drop = FALSE]
+    expect_true(nrow(comp_rows) >= 2)
+    expect_equal(
+      sum(comp_rows$contribution),
+      pairs$match_weight[1],
+      tolerance = 0.01
+    )
+    expect_equal(
+      wf$contribution[wf$direction == 'final'],
+      wf$contribution[wf$direction == 'prior'] + pairs$match_weight[1],
+      tolerance = 0.01
+    )
+  }
+})
+
+test_that('il_waterfall() validates which', {
+  con <- test_con()
+  withr::defer(test_discon(con))
+
+  df <- fake_1000
+  spec <- il_spec() |>
+    il_compare(first_name, cl_exact()) |>
+    il_compare(surname, cl_exact()) |>
+    il_block_on(first_name)
+
+  model <- il_model(df, spec = spec, con = con) |>
+    il_estimate_u(max_pairs = 1e6) |>
+    il_estimate_em(block_on(first_name))
+
+  pairs <- predict(model, threshold = 0)
+  expect_error(il_waterfall(pairs, which = 0), 'which')
+  expect_error(il_waterfall(pairs, which = nrow(pairs) + 1L), 'which')
+})
