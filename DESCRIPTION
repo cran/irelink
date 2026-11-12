@@ -1,6 +1,6 @@
 Package: irelink
 Title: Fast Probabilistic Record Linkage
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: c(
     person(given = "Christopher T.",
            family = "Kenny",
@@ -59,7 +59,7 @@ Config/Needs/website: christopherkenny/ctktemplate, rmarkdown
 Config/roxygen2/version: 8.0.0
 Language: en-US
 NeedsCompilation: no
-Packaged: 2026-09-30 20:05:49 UTC; chris
+Packaged: 2026-11-12 22:11:44 UTC; chris
 Author: Christopher T. Kenny [aut, cre, cph] (ORCID:
     <https://orcid.org/0000-0002-9386-6860>),
   Robin Linacre [cph] (Lead author of splink, the Python package this is
@@ -72,4 +72,4 @@ Author: Christopher T. Kenny [aut, cre, cph] (ORCID:
   UK Ministry of Justice [cph] (Copyright holder of splink)
 Maintainer: Christopher T. Kenny <ctkenny@proton.me>
 Repository: CRAN
-Date/Publication: 2026-10-10 11:30:09 UTC
+Date/Publication: 2026-11-12 22:50:02 UTC
